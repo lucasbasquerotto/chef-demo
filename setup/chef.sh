@@ -15,6 +15,18 @@ USERNAME=main
 # Password of the user to create and grant sudo privileges
 PASSWORD="abc123"
 
+# Chef Server FQDN (related to $INTERNAL_DOMAIN_NAME)
+CHEF_SERVER_FQDN=chef-server
+
+# Name of the user in the chef server
+CHEF_SERVER_USER_NAME=host
+
+# Name of the chef admin user
+CHEF_ADMIN_NAME=admin
+
+# Name of the chef admin user
+CHEF_ORG_NAME=cheforg
+
 # Whether to copy over the root user's `authorized_keys` file to the new sudo
 # user.
 ## COPY_AUTHORIZED_KEYS_FROM_ROOT=true
@@ -103,6 +115,8 @@ else
 	fi
 fi
 
+echo "User $USERNAME created" >> "/home/$USERNAME/setup.log"
+
 # Create SSH directory for sudo user
 home_directory="$(eval echo ~${USERNAME})"
 mkdir --parents "${home_directory}/.ssh"
@@ -122,11 +136,15 @@ chmod 0700 "${home_directory}/.ssh"
 chmod 0600 "${home_directory}/.ssh/authorized_keys"
 chown --recursive "${USERNAME}":"${USERNAME}" "${home_directory}/.ssh"
 
+echo "User SSH configuration finished" >> "/home/$USERNAME/setup.log"
+
 # Disable root SSH login with password
 sed --in-place 's/^PermitRootLogin.*/PermitRootLogin prohibit-password/g' /etc/ssh/sshd_config
 if sshd -t -q; then
 	systemctl restart sshd
 fi
+
+echo "Root SSH disabled" >> "/home/$USERNAME/setup.log"
 
 # Add exception for SSH and then enable UFW firewall
 # Allow SSH be accessible
@@ -135,7 +153,9 @@ ufw allow 22
 ufw allow 9463
 ufw --force enable
 
-apt autoremove -y
+echo "UFW enabled" >> "/home/$USERNAME/setup.log"
+
+apt-get autoremove -y
 
 echo "$SSH_PRIVATE" > "/home/$USERNAME/.ssh/id_rsa"
 echo "$SSH_PUBLIC" > "/home/$USERNAME/.ssh/id_rsa.pub"
@@ -168,19 +188,51 @@ resolvconf -u
 echo "VPN DNS Defined" >> "/home/$USERNAME/setup.log"
 
 ########################
-###       CHEF       ###
+### CHEF WORKSTATION ###
 ########################
 
-cd ~
-wget https://packages.chef.io/files/stable/chef-server/12.18.14/ubuntu/18.04/chef-server-core_12.18.14-1_amd64.deb
+echo "Chef Workstation - Preparing..." >> "/home/$USERNAME/setup.log"
 
-sudo dpkg -i chef-server-core_*.deb
+apt-get update
+apt-get install -y git
 
-sudo chef-server-ctl reconfigure
+cd /home/$USERNAME
+git clone https://github.com/chef/chef-repo.git
 
-sudo chef-server-ctl user-create admin admin admin admin@example.com abc456 -f admin.pem
+git config --global user.name "Chef User"
+git config --global user.email "chef@domain.com"
 
-sudo chef-server-ctl org-create cheforg "DigChef Organization" --association_user admin -f cheforg-validator.pem
+echo ".chef" >> /home/$USERNAME/chef-repo/.gitignore
 
+cd /home/$USERNAME/chef-repo
+git add .
+
+git commit -m "Excluding the ./.chef directory from version control"
+
+cd /home/$USERNAME
+wget https://packages.chef.io/files/stable/chefdk/3.5.13/ubuntu/18.04/chefdk_3.5.13-1_amd64.deb
+#wget https://packages.chef.io/files/stable/chefdk/3.5.13/ubuntu/14.04/chefdk_3.5.13-1_amd64.deb
+
+dpkg -i chefdk_*.deb
+
+echo "Chef Workstation - Repo Defined" >> "/home/$USERNAME/setup.log"
+
+echo 'eval "$(chef shell-init bash)"' >> /home/$USERNAME/.bash_profile
+
+source /home/$USERNAME/.bash_profile
+
+echo "Chef Workstation - Bash Profile" >> "/home/$USERNAME/setup.log"
+
+mkdir /home/$USERNAME/chef-repo/.chef
+
+scp -o StrictHostKeyChecking=no $CHEF_SERVER_USER_NAME@$CHEF_SERVER_FQDN:/home/$CHEF_SERVER_USER_NAME/$CHEF_ADMIN_NAME.pem /home/$USERNAME/chef-repo/.chef
+scp -o StrictHostKeyChecking=no $CHEF_SERVER_USER_NAME@$CHEF_SERVER_FQDN:/home/$CHEF_SERVER_USER_NAME/$CHEF_ORG_NAME-validator.pem /home/$USERNAME/chef-repo/.chef
+
+cd /home/$USERNAME/chef-repo
+knife ssl fetch
+
+chown --recursive "${USERNAME}":"${USERNAME}" "/home/$USERNAME/chef-repo"
+
+echo "Chef Workstation - Finished" >> "/home/$USERNAME/setup.log"
 
 echo "Setup Finished" >> "/home/$USERNAME/setup.log"

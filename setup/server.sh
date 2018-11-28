@@ -15,6 +15,15 @@ USERNAME=host
 # Password of the user to create and grant sudo privileges
 PASSWORD="def456"
 
+# Name of the chef admin user
+CHEF_ADMIN_NAME=admin
+
+# Password of the chef admin user
+CHEF_ADMIN_PASS=abc456
+
+# Name of the chef admin user
+CHEF_ORG_NAME=cheforg
+
 # Whether to copy over the root user's `authorized_keys` file to the new sudo
 # user.
 ## COPY_AUTHORIZED_KEYS_FROM_ROOT=true
@@ -108,90 +117,47 @@ echo "Main logic finished" >> "/home/$USERNAME/setup.log"
 
 echo "Defining VPN DNS..." >> "/home/$USERNAME/setup.log"
 
-# apt install -y openresolv
 apt install -y resolvconf
 
 touch /etc/resolvconf/resolv.conf.d/head
-# touch /etc/resolv.conf
 
 { 
 	echo "search $INTERNAL_DOMAIN_NAME"
 	echo "nameserver 8.8.8.8"
 	echo "nameserver 8.8.4.4"
 } >> /etc/resolvconf/resolv.conf.d/head
-# } >> /etc/resolv.conf
 
 resolvconf -u
 
 echo "VPN DNS Defined" >> "/home/$USERNAME/setup.log"
 
 ########################
-###   PUPPET AGENT   ###
+###   CHEF SERVER    ###
 ########################
 
-echo "Puppet Agent started" >> "/home/$USERNAME/setup.log"
+echo "Chef Server instalation started" >> "/home/$USERNAME/setup.log"
 
-mkdir -p /tmp/puppet/
-cd /tmp/puppet/ && wget https://apt.puppetlabs.com/puppetlabs-release-pc1-trusty.deb
-dpkg -i /tmp/puppet/puppetlabs-release-pc1-trusty.deb
-rm -rf /tmp/puppet
-apt-get update
+{ 
+	echo "127.0.1.1 chef-server.$INTERNAL_DOMAIN_NAME chef-server"
+	echo "127.0.0.1 localhost"
+} > /etc/hosts
 
-apt-get install -y puppet-agent
+cd /home/$USERNAME
+wget https://packages.chef.io/files/stable/chef-server/12.18.14/ubuntu/18.04/chef-server-core_12.18.14-1_amd64.deb
+#wget https://packages.chef.io/files/stable/chef-server/12.18.14/ubuntu/14.04/chef-server-core_12.18.14-1_amd64.deb
 
-echo "Puppet Agent after install" >> "/home/$USERNAME/setup.log"
+dpkg -i chef-server-core_*.deb
 
-/opt/puppetlabs/bin/puppet resource service puppet ensure=running enable=true
+echo "Chef Server package extracted" >> "/home/$USERNAME/setup.log"
 
-echo "Puppet Agent finished" >> "/home/$USERNAME/setup.log"
+chef-server-ctl reconfigure
 
-########################
-###      DOCKER      ###
-########################
+echo "Chef Server configured" >> "/home/$USERNAME/setup.log"
 
-# if [ "${ANSIBLE_HOST}" = true ]; then
-# 	echo "Installing Docker..." >> "/home/$USERNAME/setup.log"
+chef-server-ctl user-create $CHEF_ADMIN_NAME first last $CHEF_ADMIN_NAME@example.com $CHEF_ADMIN_PASS -f $CHEF_ADMIN_NAME.pem
 
-# 	# First, update your existing list of packages
-# 	apt update
+chef-server-ctl org-create $CHEF_ORG_NAME "Chef Organization" --association_user $CHEF_ADMIN_NAME -f $CHEF_ORG_NAME-validator.pem
 
-# 	# Next, install a few prerequisite packages which let apt use packages over HTTPS
-# 	apt install -y apt-transport-https ca-certificates curl software-properties-common
-
-# 	# Then add the GPG key for the official Docker repository to your system
-# 	curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add -
-
-# 	# Add the Docker repository to APT sources
-# 	add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu bionic stable" -y
-
-# 	# Next, update the package database with the Docker packages from the newly added repo
-# 	apt update
-
-# 	# Finally, install Docker
-# 	apt install -y docker-ce
-
-# 	# Add the user to the docker group if requested
-# 	if [ "${ADD_USER_TO_DOCKER_GROUP}" = true ]; then
-# 		usermod -aG docker $USERNAME
-# 	fi
-
-# 	echo "Docker Installed" >> "/home/$USERNAME/setup.log"
-# fi
-
-########################
-###      PUPPET      ###
-########################
-
-# cd ~ && wget https://apt.puppetlabs.com/puppetlabs-release-pc1-trusty.deb
-# dpkg -i puppetlabs-release-pc1-trusty.deb
-
-# apt-get update
-# apt-get install puppet-agent
-
-# /opt/puppetlabs/bin/puppet resource service puppet ensure=running enable=true
-
-########################
-###    KUBERNETES    ###
-########################
+echo "Chef Server instalation finished" >> "/home/$USERNAME/setup.log"
 	
 echo "Setup Finished" >> "/home/$USERNAME/setup.log"
