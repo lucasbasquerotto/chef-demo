@@ -6,23 +6,23 @@ set -euo pipefail
 ########################
 
 # Internal domain name (VPN)
-INTERNAL_DOMAIN_NAME="devdomain.tk"
+INTERNAL_DOMAIN_NAME='devdomain.tk'
 
 # Name of the user to create and grant sudo privileges
 ## USERNAME=sammy
-USERNAME=host
+USERNAME='host'
 
 # Password of the user to create and grant sudo privileges
-PASSWORD="def456"
+PASSWORD='def456'
 
 # Name of the chef admin user
-CHEF_ADMIN_NAME=admin
+CHEF_ADMIN_NAME='admin'
 
 # Password of the chef admin user
-CHEF_ADMIN_PASS=abc456
+CHEF_ADMIN_PASS='abc456'
 
 # Name of the chef admin user
-CHEF_ORG_NAME=cheforg
+CHEF_ORG_NAME='cheforg'
 
 # Whether to copy over the root user's `authorized_keys` file to the new sudo
 # user.
@@ -135,7 +135,7 @@ echo "VPN DNS Defined" >> "/home/$USERNAME/setup.log"
 ###   CHEF SERVER    ###
 ########################
 
-echo "Chef Server instalation started" >> "/home/$USERNAME/setup.log"
+echo "Chef Server installation started" >> "/home/$USERNAME/setup.log"
 
 { 
 	echo "127.0.1.1 chef-server.$INTERNAL_DOMAIN_NAME chef-server"
@@ -158,6 +158,6 @@ chef-server-ctl user-create $CHEF_ADMIN_NAME first last $CHEF_ADMIN_NAME@example
 
 chef-server-ctl org-create $CHEF_ORG_NAME "Chef Organization" --association_user $CHEF_ADMIN_NAME -f $CHEF_ORG_NAME-validator.pem
 
-echo "Chef Server instalation finished" >> "/home/$USERNAME/setup.log"
+echo "Chef Server installation finished" >> "/home/$USERNAME/setup.log"
 	
 echo "Setup Finished" >> "/home/$USERNAME/setup.log"

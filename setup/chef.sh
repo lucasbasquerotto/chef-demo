@@ -6,26 +6,14 @@ set -euo pipefail
 ########################
 
 # Internal domain name (VPN)
-INTERNAL_DOMAIN_NAME="devdomain.tk"
+INTERNAL_DOMAIN_NAME='devdomain.tk'
 
 # Name of the user to create and grant sudo privileges
 ## USERNAME=sammy
-USERNAME=main
+USERNAME='main'
 
 # Password of the user to create and grant sudo privileges
-PASSWORD="abc123"
-
-# Chef Server FQDN (related to $INTERNAL_DOMAIN_NAME)
-CHEF_SERVER_FQDN=chef-server
-
-# Name of the user in the chef server
-CHEF_SERVER_USER_NAME=host
-
-# Name of the chef admin user
-CHEF_ADMIN_NAME=admin
-
-# Name of the chef admin user
-CHEF_ORG_NAME=cheforg
+PASSWORD='abc123'
 
 # Whether to copy over the root user's `authorized_keys` file to the new sudo
 # user.
@@ -197,41 +185,19 @@ apt-get update
 apt-get install -y git
 
 cd /home/$USERNAME
-git clone https://github.com/chef/chef-repo.git
-
-git config --global user.name "Chef User"
-git config --global user.email "chef@domain.com"
-
-echo ".chef" >> /home/$USERNAME/chef-repo/.gitignore
-
-cd /home/$USERNAME/chef-repo
-git add .
-
-git commit -m "Excluding the ./.chef directory from version control"
-
-cd /home/$USERNAME
 wget https://packages.chef.io/files/stable/chefdk/3.5.13/ubuntu/18.04/chefdk_3.5.13-1_amd64.deb
 #wget https://packages.chef.io/files/stable/chefdk/3.5.13/ubuntu/14.04/chefdk_3.5.13-1_amd64.deb
+
+echo "Chef Workstation - chefdk downloaded" >> "/home/$USERNAME/setup.log"
 
 dpkg -i chefdk_*.deb
 
 echo "Chef Workstation - Repo Defined" >> "/home/$USERNAME/setup.log"
 
+# shellcheck disable=SC2016
 echo 'eval "$(chef shell-init bash)"' >> /home/$USERNAME/.bash_profile
 
-source /home/$USERNAME/.bash_profile
-
-echo "Chef Workstation - Bash Profile" >> "/home/$USERNAME/setup.log"
-
-mkdir /home/$USERNAME/chef-repo/.chef
-
-scp -o StrictHostKeyChecking=no $CHEF_SERVER_USER_NAME@$CHEF_SERVER_FQDN:/home/$CHEF_SERVER_USER_NAME/$CHEF_ADMIN_NAME.pem /home/$USERNAME/chef-repo/.chef
-scp -o StrictHostKeyChecking=no $CHEF_SERVER_USER_NAME@$CHEF_SERVER_FQDN:/home/$CHEF_SERVER_USER_NAME/$CHEF_ORG_NAME-validator.pem /home/$USERNAME/chef-repo/.chef
-
-cd /home/$USERNAME/chef-repo
-knife ssl fetch
-
-chown --recursive "${USERNAME}":"${USERNAME}" "/home/$USERNAME/chef-repo"
+chown --recursive "${USERNAME}":"${USERNAME}" /home/$USERNAME/.bash_profile
 
 echo "Chef Workstation - Finished" >> "/home/$USERNAME/setup.log"
 

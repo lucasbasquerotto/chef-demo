@@ -1,21 +1,47 @@
 #!/bin/bash
 set -e
 
-# Example to download git repo and use its files
-# Make sure:
-# 1) There's a puppet server (setup/puppet.sh) with exposed port 8140 to the agents
-# 2) The server is viewed as having the puppet domain by the agents (in this example, the full hostname is puppet.devdomain.tk)
-# 3) There is at least 1 agent (setup/host.sh) with port 80 opened to public internet
-# $ git clone https://github.com/lucasbasquerotto/puppet-demo
-# $ sudo mkdir /app
-# $ sudo mv puppet-demo/* /app/
+# Chef Server FQDN (related to $INTERNAL_DOMAIN_NAME)
+CHEF_SERVER_FQDN='chef-server'
 
-sudo cp -R /app/modules/* /etc/puppetlabs/code/modules/
-sudo cp /app/manifests/default.pp /etc/puppetlabs/code/environments/production/manifests/site.pp
+# Name of the user in the chef server
+CHEF_SERVER_USER_NAME="host"
 
-sudo /opt/puppetlabs/bin/puppet cert list
+# Name of the chef admin user
+CHEF_ADMIN_NAME='admin'
 
-sudo /opt/puppetlabs/bin/puppet cert sign --all
+# Name of the chef admin user
+CHEF_ORG_NAME='cheforg'
 
-sudo /opt/puppetlabs/bin/puppet cert list
-sudo /opt/puppetlabs/bin/puppet cert list -all
+# Location of the knife.rb file
+CONFIG_ORIGIN='https://raw.githubusercontent.com/lucasbasquerotto/chef-demo/master/.chef/knife.rb'
+
+# shellcheck source=/dev/null
+source ~/.bash_profile
+
+cd ~
+git clone https://github.com/chef/chef-repo.git
+
+git config --global user.name "Chef User"
+git config --global user.email "chef@domain.com"
+
+echo ".chef" >> ~/chef-repo/.gitignore
+
+cd ~/chef-repo
+git add .
+
+git commit -m "Excluding the ./.chef directory from version control"
+
+mkdir ~/chef-repo/.chef
+
+wget "$CONFIG_ORIGIN" --directory-prefix="$HOME/chef-repo/.chef/"
+
+scp -o StrictHostKeyChecking=no $CHEF_SERVER_USER_NAME@$CHEF_SERVER_FQDN:/home/$CHEF_SERVER_USER_NAME/$CHEF_ADMIN_NAME.pem ~/chef-repo/.chef
+scp -o StrictHostKeyChecking=no $CHEF_SERVER_USER_NAME@$CHEF_SERVER_FQDN:/home/$CHEF_SERVER_USER_NAME/$CHEF_ORG_NAME-validator.pem ~/chef-repo/.chef
+
+cd ~/chef-repo
+knife ssl fetch
+
+# Verification: $ knife client list
+# knife bootstrap $node_domain_or_IP -x host -A -P def456 --sudo --use-sudo-password -N $name
+# Ex: knife bootstrap worker-001.kube -x host -A -P def456 --sudo --use-sudo-password -N worker-001
