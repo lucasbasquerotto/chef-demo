@@ -14,7 +14,7 @@ CHEF_ADMIN_NAME='admin'
 CHEF_ORG_NAME='cheforg'
 
 # Location of the knife.rb file
-CONFIG_ORIGIN='https://raw.githubusercontent.com/lucasbasquerotto/chef-demo/master/.chef/knife.rb'
+CONFIG_ORIGIN='https://raw.githubusercontent.com/lucasbasquerotto/chef-demo/master/chef-repo/.chef/knife.rb'
 
 # shellcheck source=/dev/null
 source ~/.bash_profile
@@ -45,3 +45,6 @@ knife ssl fetch
 # Verification: $ knife client list
 # knife bootstrap $node_domain_or_IP -x host -A -P def456 --sudo --use-sudo-password -N $name
 # Ex: knife bootstrap worker-001.kube -x host -A -P def456 --sudo --use-sudo-password -N worker-001
+# 
+# Add the Cookbook to your Node
+# $ knife cookbook upload -a
