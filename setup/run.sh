@@ -43,6 +43,7 @@ scp -o StrictHostKeyChecking=no $CHEF_SERVER_USER_NAME@$CHEF_SERVER_FQDN:/home/$
 cd ~/chef-repo
 knife ssl fetch
 
+# cd ~/chef-repo
 # Verification: $ knife client list
 # knife bootstrap $node_domain_or_IP -x host -A -P def456 --sudo --use-sudo-password -N $name
 # Ex: knife bootstrap worker-001.kube -x host -A -P def456 --sudo --use-sudo-password -N worker-001
