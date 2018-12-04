@@ -13,28 +13,29 @@ CHEF_ADMIN_NAME='admin'
 # Name of the chef admin user
 CHEF_ORG_NAME='cheforg'
 
-# Location of the knife.rb file
-CONFIG_ORIGIN='https://raw.githubusercontent.com/lucasbasquerotto/chef-demo/master/chef-repo/.chef/knife.rb'
+# Git repository where is the chef repo
+GIT_REPO='https://github.com/lucasbasquerotto/chef-demo.git'
 
 # shellcheck source=/dev/null
 source ~/.bash_profile
 
 cd ~
-git clone https://github.com/chef/chef-repo.git
+git clone "$GIT_REPO"
+mkdir chef-repo
+shopt -s dotglob
+mv chef-demo/chef-repo/* chef-repo/
+
+rm -rf chef-demo
 
 git config --global user.name "Chef User"
 git config --global user.email "chef@domain.com"
 
 echo ".chef" >> ~/chef-repo/.gitignore
 
-cd ~/chef-repo
-git add .
+# cd ~/chef-repo
+# git add .
 
-git commit -m "Excluding the ./.chef directory from version control"
-
-mkdir ~/chef-repo/.chef
-
-wget "$CONFIG_ORIGIN" --directory-prefix="$HOME/chef-repo/.chef/"
+# git commit -m "Excluding the ./.chef directory from version control"
 
 scp -o StrictHostKeyChecking=no $CHEF_SERVER_USER_NAME@$CHEF_SERVER_FQDN:/home/$CHEF_SERVER_USER_NAME/$CHEF_ADMIN_NAME.pem ~/chef-repo/.chef
 scp -o StrictHostKeyChecking=no $CHEF_SERVER_USER_NAME@$CHEF_SERVER_FQDN:/home/$CHEF_SERVER_USER_NAME/$CHEF_ORG_NAME-validator.pem ~/chef-repo/.chef
