@@ -19,11 +19,15 @@ GIT_REPO='https://github.com/lucasbasquerotto/chef-demo.git'
 # shellcheck source=/dev/null
 source ~/.bash_profile
 
+# Chef Repo name in git directory
+# CHEF_REPO_NAME='chef-repo'
+CHEF_REPO_NAME='chef-repo-101'
+
 cd ~
 git clone "$GIT_REPO"
 mkdir chef-repo
 shopt -s dotglob
-mv chef-demo/chef-repo/* chef-repo/
+mv chef-demo/"$CHEF_REPO_NAME"/* chef-repo/
 
 rm -rf chef-demo
 
