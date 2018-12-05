@@ -54,3 +54,9 @@ knife ssl fetch
 # 
 # Add the Cookbook to your Node
 # $ knife cookbook upload -a
+# $ export EDITOR=nano
+# $ knife node edit worker-001
+# ( "run_list": [ "recipe[main]" ] )
+# $ ssh host@worker-001.kube
+# $ sudo chef-client
+# ( http://node_domain_or_IP )

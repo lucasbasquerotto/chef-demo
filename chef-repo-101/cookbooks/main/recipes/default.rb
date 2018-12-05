@@ -21,6 +21,7 @@ directory node['main']['doc_root'] do
   owner 'www-data'
   group 'www-data'
   mode '0644'
+  recursive true
   action :create
 end
 
