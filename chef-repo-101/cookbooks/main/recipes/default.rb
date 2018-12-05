@@ -20,7 +20,7 @@ end
 directory node['main']['doc_root'] do
   owner 'www-data'
   group 'www-data'
-  mode '0644'
+  mode '0744'
   recursive true
   action :create
 end
